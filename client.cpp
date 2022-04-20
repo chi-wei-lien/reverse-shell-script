@@ -7,11 +7,21 @@
 
 #define PORT 8080
 
+int setup_socket();
+
 int main() {
+  int client_fd = setup_socket();
+  char hello[] = "Hello from client";
+  send(client_fd, hello, strlen(hello), 0);
+  close(client_fd);
+  return 0;
+}
+
+int setup_socket() {
   int socket_fd = socket(AF_INET, SOCK_STREAM, 0);
   if (socket_fd < 0) {
-      printf("socket error \n");
-      exit(EXIT_FAILURE);
+    printf("socket error \n");
+    exit(EXIT_FAILURE);
   }
  
   struct sockaddr_in serv_addr;
@@ -27,9 +37,5 @@ int main() {
     exit(EXIT_FAILURE);
   }
 
-  char hello[] = "Hello from client";
-  send(socket_fd, hello, strlen(hello), 0);
-  printf("Hello message sent\n");
-  close(socket_fd);
-  return 0;
+  return socket_fd;
 }
