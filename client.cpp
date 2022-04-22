@@ -60,7 +60,6 @@ int main() {
 
       strcat(buffer, SEPARATOR);
       strcat(buffer, cwd);
-      strcat(buffer, "\n");
 
       if (send(client_fd, buffer, BUFFER_SIZE, 0) < 0) {
         perror("send failed");
@@ -90,7 +89,6 @@ int main() {
 
       strcat(buffer, SEPARATOR);
       strcat(buffer, cwd);
-      strcat(buffer, "\n");
 
       printf("%s\n", buffer);
       if (send(client_fd, buffer, BUFFER_SIZE, 0) < 0) {

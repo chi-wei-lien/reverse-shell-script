@@ -18,6 +18,7 @@ int main(int argc, char *argv[]) {
 
   char buffer[BUFFER_SIZE];
   char cwd[BUFFER_SIZE];
+  char output[BUFFER_SIZE];
 
   if (argc != 3) {
     perror("please provide the right arguments\n");
@@ -96,7 +97,14 @@ int main(int argc, char *argv[]) {
       return -1;
     }
 
-    printf("%s", buffer);
+    char *separator = strstr(buffer, SEPARATOR);
+    char *new_cwd = separator + strlen(SEPARATOR);
+
+    strcpy(cwd, new_cwd);
+    cwd[strlen(new_cwd) + 1] = '\0';
+
+    memcpy(output, buffer, separator - buffer);
+    printf("%s", output);
   }
   return 0;
 }
