@@ -5,7 +5,8 @@
 #include <unistd.h>
 
 #define PORT (3000)
-#define BUFFER_SIZE (512)
+#define BUFFER_SIZE (1024)
+#define SEPARATOR ("<SePaRaToR>")
 
 int main() {
   int client_fd;
@@ -45,16 +46,21 @@ int main() {
     }
 
     if (strncmp(buffer, "cd", 2) == 0) {
-      printf("change directory\n");
       strcpy(cwd, &buffer[3]);
       cwd[strlen(&buffer[2])] = '\0';
-      printf("cwd: %s\n", cwd);
+
       if (chdir(cwd)) {
         perror("change directory failed");
-        return -1;
+        char chdir_fail_mesg[] = "Change Directroy Failed\n";
+        strcpy(buffer, chdir_fail_mesg);
+        buffer[strlen(chdir_fail_mesg)] = '\0';
       }
+
       getcwd(cwd, BUFFER_SIZE);
-      printf("cwd: %s\n", cwd);
+
+      strcat(buffer, SEPARATOR);
+      strcat(buffer, cwd);
+      strcat(buffer, "\n");
 
       if (send(client_fd, buffer, BUFFER_SIZE, 0) < 0) {
         perror("send failed");
@@ -74,13 +80,17 @@ int main() {
 
       while (true) {
         char line[BUFFER_SIZE];
-        int status = fscanf(fp, "%s", line);
+        int status = fscanf(fp, "%[^\n]%*c", line);
         if (status != 1) {
           break;
         }
         strcat(buffer, line);
         strcat(buffer, "\n");
       }
+
+      strcat(buffer, SEPARATOR);
+      strcat(buffer, cwd);
+      strcat(buffer, "\n");
 
       printf("%s\n", buffer);
       if (send(client_fd, buffer, BUFFER_SIZE, 0) < 0) {

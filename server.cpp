@@ -6,8 +6,9 @@
 
 /* Pound define the size for buffer */
 
-#define BUFFER_SIZE (512)
+#define BUFFER_SIZE (1024)
 #define BACKLOG (3)
+#define SEPARATOR ("<SePaRaToR>")
 
 int main(int argc, char *argv[]) {
   int server_fd;
@@ -82,7 +83,7 @@ int main(int argc, char *argv[]) {
   while (1) {
     memset(buffer, 0, BUFFER_SIZE);
 
-    printf("%s > ", cwd);
+    printf("%s> ", cwd);
     scanf("%511[^\n]%*c", buffer);
 
     if (send(client_fd, buffer, BUFFER_SIZE, 0) < 0) {
@@ -95,7 +96,7 @@ int main(int argc, char *argv[]) {
       return -1;
     }
 
-    printf("%s\n", buffer);
+    printf("%s", buffer);
   }
   return 0;
 }
