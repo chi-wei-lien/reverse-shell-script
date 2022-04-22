@@ -1,86 +1,101 @@
-#include <netinet/in.h>
-#include <string>
-#include <iostream>
 #include <arpa/inet.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/socket.h>
-#include <unistd.h>
 
-#define PORT (8080)
-#define HOST ("127.0.0.1")
+
+/* Pound define the size for buffer */
+
+#define BUFFER_SIZE (512)
 #define BACKLOG (3)
 
-using namespace std;
+int main(int argc, char *argv[]) {
+  int server_fd;
+  int client_fd;
+  struct sockaddr_in server_addr;
+  struct sockaddr_in client_addr;
 
-int setup_socket();
+  char buffer[BUFFER_SIZE];
+  char cwd[BUFFER_SIZE];
 
-int main() {
-  printf("[*] Listening on %s:%d...\n", HOST, PORT);
-  int server_fd = setup_socket();
-  printf("[*] Client connected\n");
-  string user_input = "";
-  char cwd[256];
-  int valread = read(server_fd, cwd, 256);
-  while (true) {
-    printf("%s> ", cwd);
-    getline(cin, user_input);
-    char buffer[user_input.length() + 1];
-    strcpy(buffer, user_input.c_str());
-    send(server_fd, buffer, strlen(buffer), 0);
-    char response[1024] = { 0 };
-    int valread = read(server_fd, response, 1024);
-    if (strcmp(response, "") == 0) {
-      continue;
-    }
-    printf("%s\n", response);
+  if (argc != 3) {
+    perror("please provide the right arguments\n");
+    return -1;
   }
 
-  close(server_fd);
-  return 0;
+  printf("[*] Listening on %s:%s...\n", argv[1], argv[2]);
 
-}
+  server_fd = socket(AF_INET, SOCK_STREAM, 0);
+  if (server_fd <= 0) {
+    perror("socket setup failed\n");
+    return -1;
+  }
 
-int setup_socket() {
-
+  /* optional: attached the socket forcefully. Sometimes the port */
+  /* won't be release after the program stops                     */
   /*
-   * AF_INET: Ipv4
-   * SOCK_STREAM: TCP
-   */
-  int socket_fd = socket(AF_INET, SOCK_STREAM, 0);
-  if (socket_fd == 0) {
-    printf("socket connection faild");
-    exit(EXIT_FAILURE);
+  int opt = 1;
+  if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT,
+      &opt, sizeof(opt))) {
+    perror("setsockopt failed \n");
+    return -1;
+  }
+  */
+
+  /* Set up the server address and port                           */
+
+  server_addr.sin_family = AF_INET;
+  inet_pton(AF_INET, argv[1], &server_addr.sin_addr);
+  server_addr.sin_port = htons(atoi(argv[2]));
+
+  /* Binding the socket                                           */
+
+  if (bind(server_fd, (struct sockaddr *) &server_addr,
+      sizeof(server_addr)) < 0) {
+    perror("bind failed\n");
+    return -1;
   }
 
-  struct sockaddr_in address;
-  address.sin_family = AF_INET;
-  
-  inet_pton(AF_INET, HOST, &address.sin_addr.s_addr);
-  address.sin_port = htons(PORT);
-  int addrlen = sizeof(address);
-  
-  int bind_return = bind(socket_fd, (struct sockaddr*)&address, sizeof(address));
+  /* Socket start listening                                       */
 
-  if (bind_return < 0) {
-    printf("bind faild");
-    exit(EXIT_FAILURE);
+  if (listen(server_fd, BACKLOG) < 0) {
+    perror("listen failed\n");
+    return -1;
   }
 
-  int listen_return = listen(socket_fd, BACKLOG);
-  if (listen_return < 0) {
-    printf("listen failed");
-    exit(EXIT_FAILURE);
-  } 
-  
-  /* change this socket name */
-  int server_fd = accept(socket_fd, (struct sockaddr*)&address, (socklen_t*)&addrlen);
+  int client_addr_size = sizeof(client_addr);
+  client_fd = accept(server_fd, (struct sockaddr *) &client_addr,
+                     (socklen_t *) &client_addr_size);
 
-  if (server_fd < 0) {
-    printf("accept failed");
-    exit(EXIT_FAILURE);
+  if (client_fd < 0) {
+    perror("accept failed\n");
+    return -1;
   }
-  return server_fd;
 
+  printf("[*] Connected to %s:%s\n", inet_ntoa(client_addr.sin_addr), argv[2]);
+
+  if (recv(client_fd, cwd, BUFFER_SIZE, 0) < 0) {
+    perror("recv cwd failed\n");
+    return -1;
+  }
+
+  while (1) {
+    memset(buffer, 0, BUFFER_SIZE);
+
+    printf("%s > ", cwd);
+    scanf("%511[^\n]%*c", buffer);
+
+    if (send(client_fd, buffer, BUFFER_SIZE, 0) < 0) {
+      perror("send failed");
+      return -1;
+    }
+
+    if (recv(client_fd, buffer, BUFFER_SIZE, 0) < 0) {
+      perror("recv failed\n");
+      return -1;
+    }
+
+    printf("%s\n", buffer);
+  }
+  return 0;
 }
