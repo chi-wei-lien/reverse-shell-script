@@ -58,6 +58,7 @@ int main() {
 
       getcwd(cwd, BUFFER_SIZE);
 
+      strcat(buffer, "\n");
       strcat(buffer, SEPARATOR);
       strcat(buffer, cwd);
 

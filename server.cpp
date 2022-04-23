@@ -83,6 +83,7 @@ int main(int argc, char *argv[]) {
 
   while (1) {
     memset(buffer, 0, BUFFER_SIZE);
+    memset(output, 0, BUFFER_SIZE);
 
     printf("%s> ", cwd);
     scanf("%511[^\n]%*c", buffer);
