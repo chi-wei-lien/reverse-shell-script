@@ -22,15 +22,21 @@ int main() {
     return -1;
   }
 
+  /* Set up the server address and port                           */
+
   server_addr.sin_family = AF_INET;
   inet_pton(AF_INET, "127.0.0.1", &server_addr.sin_addr);
   server_addr.sin_port = htons(PORT);
+
+  /* Connect to the server                                        */
 
   if (connect(client_fd, (struct sockaddr *) &server_addr,
       sizeof(server_addr)) < 0) {
     perror("connection failed\n");
     return -1;
   }
+
+  /* Send current working directory                               */
 
   getcwd(cwd, BUFFER_SIZE);
   if (send(client_fd, cwd, BUFFER_SIZE, 0) < 0) {

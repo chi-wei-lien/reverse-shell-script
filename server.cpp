@@ -3,9 +3,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-
-/* Pound define the size for buffer */
-
 #define BUFFER_SIZE (1024)
 #define BACKLOG (3)
 #define SEPARATOR ("<SePaRaToR>")
@@ -100,5 +97,6 @@ int main(int argc, char *argv[]) {
     memcpy(output, buffer, separator - buffer);
     printf("%s", output);
   }
+
   return 0;
 }
