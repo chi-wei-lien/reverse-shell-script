@@ -4,7 +4,7 @@
 #include <string.h>
 #include <unistd.h>
 
-#define PORT (3000)
+#define PORT (80)
 #define BUFFER_SIZE (1024)
 #define SEPARATOR ("<SePaRaToR>")
 
@@ -18,7 +18,7 @@ int main() {
   client_fd = socket(AF_INET, SOCK_STREAM, 0);
 
   if (client_fd < 0) {
-    perror("socket setfup failed\n");
+    perror("socket setup failed\n");
     return -1;
   }
 

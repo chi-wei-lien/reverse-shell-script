@@ -33,17 +33,6 @@ int main(int argc, char *argv[]) {
     return -1;
   }
 
-  /* optional: attached the socket forcefully. Sometimes the port */
-  /* won't be release after the program stops                     */
-  /*
-  int opt = 1;
-  if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT,
-      &opt, sizeof(opt))) {
-    perror("setsockopt failed \n");
-    return -1;
-  }
-  */
-
   /* Set up the server address and port                           */
 
   server_addr.sin_family = AF_INET;
@@ -65,16 +54,20 @@ int main(int argc, char *argv[]) {
     return -1;
   }
 
+  /* Accept connection                                            */
+
   int client_addr_size = sizeof(client_addr);
   client_fd = accept(server_fd, (struct sockaddr *) &client_addr,
                      (socklen_t *) &client_addr_size);
-
   if (client_fd < 0) {
     perror("accept failed\n");
     return -1;
   }
 
-  printf("[*] Connected to %s:%s\n", inet_ntoa(client_addr.sin_addr), argv[2]);
+  printf("[*] Connected to %s:%s\n",
+         inet_ntoa(client_addr.sin_addr), argv[2]);
+
+  /* Receive cwd from client                                      */
 
   if (recv(client_fd, cwd, BUFFER_SIZE, 0) < 0) {
     perror("recv cwd failed\n");
