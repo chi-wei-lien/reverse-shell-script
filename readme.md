@@ -2,7 +2,7 @@
 
 ## Watch the Video First!
 
-Video Link: \
+Video Link: https://www.youtube.com/watch?v=OD9ijSZJbTs&t=192s\
 In this video I covered how to sneak into and remote control a computer using reverse shell script 😈. The whole script is written in c++ and I include the line-by-line explanation in the blog post down below. Be sure to check that out if you are interested! Just like always, this video is for educational purposes. If you do any illegal stuff you will get arrested 🚓!
 
 ## Instalation
